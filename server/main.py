@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from typing import Dict, Any
 from label_map import label_map
+from fastapi.middleware.cors import CORSMiddleware
 
 import tensorflow as tf
 import numpy as np
@@ -24,6 +25,14 @@ def run_inference(image: np.ndarray) -> Dict[str, Any]:
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ['http://localhost:5173', 'http://localhost:4200'],
+    allow_credentials = True,
+    allow_methods = ['*'],
+    allow_headers = ['*'],
+)
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)) -> JSONResponse:
     contents = await file.read()
@@ -44,7 +53,7 @@ async def predict(file: UploadFile = File(...)) -> JSONResponse:
             category = label_map.get(class_id, 'unknown')
             box = detections['detection_boxes'][i]
             score = detections["detection_scores"][i]
-            results.append({'box': box, 'category': category, 'scores': score})
+            results.append({'box': box, 'category': category, 'score': score})
     
     print("Final ", results)
     return JSONResponse(content=results)
